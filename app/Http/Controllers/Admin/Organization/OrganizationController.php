@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OrganizationController extends Controller
 {
@@ -19,7 +20,7 @@ class OrganizationController extends Controller
      */
     function __construct()
     {
-        $this->middleware('permission:org-list|org-create|org-edit|org-delete|org-show', ['only' => ['index','show']]);
+        $this->middleware('permission:org-list|org-create|org-edit|org-delete|org-show', ['only' => ['index','show', 'fetch-data']]);
         $this->middleware('permission:org-create', ['only' => ['create','store']]);
         $this->middleware('permission:org-edit', ['only' => ['edit','update']]);
         $this->middleware('permission:org-delete', ['only' => ['destroy']]);
@@ -29,17 +30,32 @@ class OrganizationController extends Controller
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
+
+//        $user = User::with('picture', 'organization')
+//            ->whereHas("roles", function ($q){
+//                $q->where("name", "Account Manager");
+//            })
+//            ->whereNotNull('organization_id')
+//            ->get();
+//            dd($user);
+
         $organizations = Organization::with('picture')->latest();
         if(!Auth::user()->hasRole("Admin") and !is_null(Auth::user()->organization_id)){
             $organizations_id = Auth::user()->organization_id;
             $organizations = $organizations->where('id', $organizations_id);
         }
-        $organizations = $organizations
+
+        if(isset($request->search)){
+            $organizations
+                ->where('organizations.name', 'LIKE', '%'.$request->search. '%');
+        }
+
+        $data = $organizations
             ->paginate(5);
 
-        return view('organizations.index',compact('organizations'))
+        return view('organizations.index',compact('data'))
             ->with('i', (request()->input('page', 1) - 1) * 5);
     }
 
@@ -179,5 +195,29 @@ class OrganizationController extends Controller
 
         return redirect()->route('organizations.index')
             ->with('success','Organization deleted successfully');
+    }
+
+    public function fetch_data(Request $request){
+        if($request->ajax())
+        {
+            $query = $request->get('query');
+            if(isset($query)){
+                $query = str_replace(" ", "%", $query);
+                $organizations = DB::table('organizations')
+                    ->Where('name', 'like', '%'.$query.'%')
+                    ->paginate(5);
+            } else {
+                $organizations = Organization::with('picture')->latest();
+                if(!Auth::user()->hasRole("Admin") and !is_null(Auth::user()->organization_id)){
+                    $organizations_id = Auth::user()->organization_id;
+                    $organizations = $organizations->where('id', $organizations_id);
+                }
+                $organizations = $organizations
+                    ->paginate(5);
+            }
+
+
+            return view('organizations.components.search_data', ['data'=>$organizations])->render();
+        }
     }
 }

@@ -19,7 +19,16 @@
             <p>{{ $message }}</p>
         </div>
     @endif
-
+    @if(Auth::user()->hasRole("Admin"))
+    <div class="float-right col-4">
+        <div class="form-group">
+            <form action="{{ route('organizations.index') }}" method="GET">
+            <input type="text" name="search" id="search" class="form-control" placeholder="Search"/>
+                <button class="float-right btn btn-success" type="submit" name="submit">Search</button>
+            </form>
+        </div>
+    </div>
+    @endif
     <table class="table table-bordered">
         <tr>
             <th>No</th>
@@ -30,7 +39,7 @@
             <th>Website</th>
             <th width="280px">Action</th>
         </tr>
-        @foreach ($organizations as $organization)
+        @foreach ($data as $organization)
             <tr>
                 <td>{{ ++$i }}</td>
                 <td>{{ $organization->name }}</td>
@@ -58,9 +67,17 @@
                 </td>
             </tr>
         @endforeach
+
     </table>
 
-    {!! $organizations->links() !!}
+
+    <input type="hidden" name="hidden_page" id="hidden_page" value="1" />
+    <input type="hidden" name="hidden_column_name" id="hidden_column_name" value="id" />
+    <input type="hidden" name="hidden_sort_type" id="hidden_sort_type" value="asc" />
+
+{{--    {!! $data->links() !!}--}}
 
     <p class="text-center text-primary"><small>muhadif here <3</small></p>
+
 @endsection
+

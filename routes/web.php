@@ -31,7 +31,10 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('organizations', OrganizationController::class);
     Route::name('organizations.')->prefix('organizations/{organization}')->group(function (){
         Route::resource('members', MemberController::class)->only([
-            'show', 'edit', 'update', 'create', 'store', 'destroy', 'add-to-manager'
+            'show', 'edit', 'update', 'create', 'store', 'destroy'
         ]);;
     });
+
+    Route::get('organizations.search', [OrganizationController::class, 'index']);
+
 });
